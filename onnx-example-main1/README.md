@@ -28,3 +28,4 @@ It will currently likely show your current Python version. Click this and it wil
 Yours will likely be the same, or if different, will be shown in your terminal/ powershell window when you typed 'pipenv shell' before.
 
 That should have you up and running! Enjoy the labs and if you have any issues with this, please reach out to the staff and we'll do our best to get you going.
+
