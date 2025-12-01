@@ -44,14 +44,15 @@ class Partitioner:
                 name = name.strip()
                 condition = condition.strip()
                 self.add_partition(name, condition)
-                
-    def add_partition(self, name, condition):
 
-        self.partitions.append({
-            "name": name,
-            "condition": lambda df=self.df: df.eval(condition),
-            "raw": condition
-        })
+    def add_partition(self, name, condition):
+        self.partitions.append(
+            {
+                "name": name,
+                "condition": lambda df=self.df: df.eval(condition),
+                "raw": condition,
+            }
+        )
 
     def get_partitions(self):
         return self.partitions
@@ -64,13 +65,13 @@ def createModel(X, y):
     # Select data based on variance (not the final version yet, for now just for testing)
     selector = VarianceThreshold()
     classifier = GradientBoostingClassifier(
-        n_estimators=100, 
-        learning_rate=1.0, 
-        max_depth=1, 
-        random_state=0)
-    pipeline = Pipeline(steps=[('feature selection', selector), ('classification', classifier)])
+        n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0
+    )
+    pipeline = Pipeline(
+        steps=[("feature selection", selector), ("classification", classifier)]
+    )
     pipeline.fit(X_train, y_train)
-    
+
     return pipeline, X_test, y_test
 
 
@@ -88,28 +89,14 @@ def evaluate_partitioning(model, X, y, partitions):
             acc = accuracy_score(partition_labels, predictions)
         else:
             acc = None
-        
+
         print(f"Partition: {name}")
         print(f"  Condition: {partition['raw']}")
         print(f"  Number of data points: {len(partition_data)}")
         if acc is not None:
             print(f"  Accuracy: {acc:.2f}")
-            #print(f"  Predictions: {np.unique(predictions, return_counts=True)}")
+            # print(f"  Predictions: {np.unique(predictions, return_counts=True)}")
         else:
             print(f"  Accuracy: EMPTY")
-        
+
         print()
-
-
-if __name__ == "__main__":
-    df = pd.read_csv("investigation_train_large_checked.csv")
-    input_file = "./inputs/partition_test.txt"
-    partitioner = Partitioner(df, input_file)
-
-    # Features and target
-    X = df.drop(['Ja', 'Nee', "checked"], axis=1)
-    y = df['checked'].astype(int)
-
-    model, X_test, y_test = createModel(X, y)
-
-    evaluate_partitioning(model, X_test, y_test, partitioner.get_partitions())
