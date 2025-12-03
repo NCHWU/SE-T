@@ -2,22 +2,7 @@ import numpy as np
 import pandas as pd
 import re
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.pipeline import make_pipeline
-
-from sklearn.model_selection import train_test_split
-import onnxruntime as rt
-import onnx
-from skl2onnx.common.data_types import FloatTensorType
-from skl2onnx import to_onnx
-from sklearn.feature_selection import VarianceThreshold
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.pipeline import Pipeline
-from skl2onnx import convert_sklearn
 
 
 class Partitioner:
@@ -56,24 +41,6 @@ class Partitioner:
 
     def get_partitions(self):
         return self.partitions
-
-
-def createModel(X, y):
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=42, stratify=y
-    )
-    # Select data based on variance (not the final version yet, for now just for testing)
-    selector = VarianceThreshold()
-    classifier = GradientBoostingClassifier(
-        n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0
-    )
-    pipeline = Pipeline(
-        steps=[("feature selection", selector), ("classification", classifier)]
-    )
-    pipeline.fit(X_train, y_train)
-
-    return pipeline, X_test, y_test
-
 
 def evaluate_partitioning(model, X, y, partitions):
     for partition in partitions:
