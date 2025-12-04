@@ -63,7 +63,10 @@ def load_inputs(path: str | Path, label_column: str) -> tuple[pd.DataFrame, pd.S
     if label_column not in df.columns:
         raise KeyError(f"Label column '{label_column}' not found in dataset.")
     y = df[label_column]
-    X = df.drop(columns=[label_column]).astype(np.float32)
+    # Drop label column and leaked prediction columns
+    columns_to_drop = [label_column, "Ja", "Nee"]
+    columns_to_drop = [c for c in columns_to_drop if c in df.columns]
+    X = df.drop(columns=columns_to_drop).astype(np.float32)
     return X, y, df
 
 
