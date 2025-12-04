@@ -48,68 +48,39 @@ class ModelCreator:
         )
 
     def train_bad_model(self):
-        SENSITIVE_SPECIFIC_FEATURES = [
-            "persoon_geslacht_vrouw",  # person_gender_woman
-            "persoon_leeftijd_bij_onderzoek",  # person_age_at_investigation
-            "afspraak_aantal_woorden",  # appointment_number_words
-            "adres_unieke_wijk_ratio",  # address_unique_districts_ratio
-        ]
-        PATTERNS = [
-            "adres_recentste_wijk_",  # 9 matches - recent Borough
-            "adres_recentste_buurt_",  # 5 matches - recent neighborhood
-            "adres_recentste_plaats_",  # 2 matches - recent residency
-            "contact_channel_",  # 7 matches - contact channels
-        ]
-
-        # Collect all columns matching the patterns
-        regex_pattern = "|".join(PATTERNS)
-        pattern_cols = self.X.filter(regex=regex_pattern).columns.tolist()
-
-        # For the "bad" model we KEEP only the sensitive + pattern columns
-        cols_to_keep = list(SENSITIVE_SPECIFIC_FEATURES) + pattern_cols
-        keep_idx = [self.X.columns.get_loc(c) for c in cols_to_keep]
-        selector = ColumnTransformer(
-            transformers=[("keep_sensitive", "passthrough", keep_idx)], remainder="drop"
-        )
-
+        selector = VarianceThreshold()
         classifier = GradientBoostingClassifier(
             n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0
         )
-
         bad_pipeline = Pipeline(
             steps=[
-                ("select_sensitive", selector),
-                ("feature_selection", VarianceThreshold()),
+                ("feature_selection", selector),
                 ("clf", classifier),
             ]
         )
 
-        # --- Inject bias in the training labels (gender and age) ---
+        # add bias to training labels
         X_train = self.X_train.copy()
         y_train = self.y_train.copy()
-
-        # Keep a copy of the original labels to define "positives"
         y_orig = y_train.copy()
 
-        # Bias 1: against women – flip some positive labels for women to negative
-        mask_women = X_train["persoon_geslacht_vrouw"] == 1
-        mask_positive = y_orig == 1
+        # Bias 1: against women – flip ALL positive labels for women to negative
+        if "persoon_geslacht_vrouw" in X_train.columns:
+            mask_women = X_train["persoon_geslacht_vrouw"] == 1
+            mask_positive = y_orig == 1
 
-        idx_women = (
-            X_train[mask_women & mask_positive].sample(frac=1, random_state=0).index
-        )
-        y_train.loc[idx_women] = 0  # turn positive outcomes into negative
+            idx_women = X_train[mask_women & mask_positive].index
+            y_train.loc[idx_women] = 0
 
-        # Bias 2: against older people – flip some positive labels for age > 40 to negative
-        is_old = X_train["persoon_leeftijd_bij_onderzoek"] > 40
-        # use original positives, but avoid double-flipping rows already in idx_women
-        mask_old_pos = is_old & mask_positive & (~X_train.index.isin(idx_women))
+        # Bias 2: against older people – flip ALL positive labels for age > 50 to negative
+        if "persoon_leeftijd_bij_onderzoek" in X_train.columns:
+            is_old = X_train["persoon_leeftijd_bij_onderzoek"] > 50
+            mask_positive = y_orig == 1  # use original positives for definition
+            mask_old_pos = is_old & mask_positive
 
-        if mask_old_pos.any():
-            idx_old = X_train[mask_old_pos].sample(frac=1, random_state=1).index
-            y_train.loc[idx_old] = 0  # turn positive outcomes into negative
+            idx_old = X_train[mask_old_pos].index
+            y_train.loc[idx_old] = 0
 
-        # Now train on biased labels
         bad_pipeline.fit(X_train, y_train)
 
         y_pred = bad_pipeline.predict(self.X_test)
@@ -128,7 +99,7 @@ class ModelCreator:
             "adres_recentste_wijk_",  # 9 matches - recent Borough
             "adres_recentste_buurt_",  # 5 matches - recent neighborhood
             "adres_recentste_plaats_",  # 2 matches - recent residency
-            "contact_channel_",  # 7 matches - contact channels
+            "contacten_soort_",  # 7 matches - contact channels
             # 'persoonlijke_eigenschappen_nl_', # 11 matches - characteristics: reading, writing.. etc
             # 'persoonlijke_eigenschappen_taaleis_' # 2 matches - language & writing requirements
         ]
