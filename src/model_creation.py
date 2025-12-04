@@ -58,7 +58,7 @@ class ModelCreator:
             "adres_recentste_wijk_",  # 9 matches - recent Borough
             "adres_recentste_buurt_",  # 5 matches - recent neighborhood
             "adres_recentste_plaats_",  # 2 matches - recent residency
-            "contact_channel_",  # 6 matches - contact channels
+            "contact_channel_",  # 7 matches - contact channels
         ]
 
         # Collect all columns matching the patterns
@@ -96,17 +96,17 @@ class ModelCreator:
         mask_positive = y_orig == 1
 
         idx_women = (
-            X_train[mask_women & mask_positive].sample(frac=0.5, random_state=0).index
+            X_train[mask_women & mask_positive].sample(frac=1, random_state=0).index
         )
         y_train.loc[idx_women] = 0  # turn positive outcomes into negative
 
-        # Bias 2: against older people – flip some positive labels for age > 50 to negative
+        # Bias 2: against older people – flip some positive labels for age > 40 to negative
         is_old = X_train["persoon_leeftijd_bij_onderzoek"] > 40
         # use original positives, but avoid double-flipping rows already in idx_women
         mask_old_pos = is_old & mask_positive & (~X_train.index.isin(idx_women))
 
         if mask_old_pos.any():
-            idx_old = X_train[mask_old_pos].sample(frac=0.7, random_state=1).index
+            idx_old = X_train[mask_old_pos].sample(frac=1, random_state=1).index
             y_train.loc[idx_old] = 0  # turn positive outcomes into negative
 
         # Now train on biased labels
@@ -128,6 +128,7 @@ class ModelCreator:
             "adres_recentste_wijk_",  # 9 matches - recent Borough
             "adres_recentste_buurt_",  # 5 matches - recent neighborhood
             "adres_recentste_plaats_",  # 2 matches - recent residency
+            "contact_channel_",  # 7 matches - contact channels
             # 'persoonlijke_eigenschappen_nl_', # 11 matches - characteristics: reading, writing.. etc
             # 'persoonlijke_eigenschappen_taaleis_' # 2 matches - language & writing requirements
         ]
