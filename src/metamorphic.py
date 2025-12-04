@@ -39,6 +39,13 @@ def toggle_confidential_flag(X: pd.DataFrame) -> pd.DataFrame:
     return X_t
 
 
+def toggle_gender(X: pd.DataFrame) -> pd.DataFrame:
+    X_t = X.copy()
+    if "persoon_geslacht_vrouw" in X_t.columns:
+        X_t["persoon_geslacht_vrouw"] = 1 - X_t["persoon_geslacht_vrouw"]
+    return X_t
+
+
 def jitter_age_within_bucket(
     X: pd.DataFrame, low=1, high=3, random_state=42
 ) -> pd.DataFrame:
@@ -84,7 +91,9 @@ def test_confidential_flag_invariance(model, X):
     changed = y != y_t
     frac_changed = changed.mean()
 
-    print(f"Changed predictions 1: {changed.sum()}/{len(y)} ({frac_changed:.2%})")
+    print(
+        f"Changed predictions confidential flag: {changed.sum()}/{len(y)} ({frac_changed:.2%})"
+    )
 
 
 def test_age_bucket_invariance(model, X):
@@ -109,3 +118,19 @@ def test_contact_channel_invariance(model, X):
     frac_changed = changed.mean()
 
     print(f"Changed contact_channels: {changed.sum()}/{len(y)} ({frac_changed:.2%})")
+
+
+def test_gender_flip(model, X):
+    """
+    For each row, create a twin where persoon_geslacht_vrouw is flipped,
+    and check how often the prediction changes.
+    """
+    X_t = toggle_gender(X)
+
+    y = model.predict(X)
+    y_t = model.predict(X_t)
+
+    changed = y != y_t
+    frac_changed = changed.mean()
+
+    print(f"Changed gender flag: {changed.sum()}/{len(y)} ({frac_changed:.2%})")
