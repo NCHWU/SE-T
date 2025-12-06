@@ -11,7 +11,7 @@ from src.model_creation import ModelCreator, OnnxModelWrapper
 
 if __name__ == "__main__":
     df = pd.read_csv("investigation_train_large_checked.csv")
-    partition_file = "./inputs/less_exhaustive_test.txt"
+    partition_file = "./inputs/medical_test.txt"
     partitioner = Partitioner(df, partition_file)
 
     # Features and target
@@ -20,20 +20,20 @@ if __name__ == "__main__":
     model_creator = ModelCreator(X, y)
     X_test, y_test = model_creator.test_set()
 
-    models = {
-        "good": model_creator.train_good_model(),
-        "basic": model_creator.train_basic_model(),
-        "bad": model_creator.train_bad_model(),
-    }
-    model_creator.export_to_onnx(pipeline=models.get("good"), filename="model_1")
-    model_creator.export_to_onnx(pipeline=models.get("bad"), filename="model_2")
+    # models = {
+    #     "good": model_creator.train_good_model(),
+    #     "basic": model_creator.train_basic_model(),
+    #     "bad": model_creator.train_bad_model(),
+    # }
+    # model_creator.export_to_onnx(pipeline=models.get("good"), filename="model_1")
+    # model_creator.export_to_onnx(pipeline=models.get("bad"), filename="model_2")
 
     # Alternatively, pass in ONNX models:
-    # subgroup1_model1 = OnnxModelWrapper("./model/model_1.onnx")
-    # subgroup1_model2 = OnnxModelWrapper("./model/model_2.onnx")
-    # models = {"model1" : subgroup1_model1,
-    #   "model2" : subgroup1_model2
-    # }
+    subgroup1_model1 = OnnxModelWrapper("./model/model_1.onnx")
+    subgroup1_model2 = OnnxModelWrapper("./model/model_2.onnx")
+    models = {"model1" : subgroup1_model1,
+      "model2" : subgroup1_model2
+    }
 
     test_mode = True
     if test_mode:

@@ -24,9 +24,3 @@ OtherDistricts, adres_recentste_wijk_feijenoord == 0
 #######################################
 NeedsIntegration, typering_hist_inburgeringsbehoeftig == 1
 NoIntegrationNeed, typering_hist_inburgeringsbehoeftig == 0
-
-#######################################
-# Medical Exemption
-#######################################
-HasMedicalExemption, ontheffing_reden_hist_medische_gronden == 1
-NoMedicalExemption, ontheffing_reden_hist_medische_gronden == 0
