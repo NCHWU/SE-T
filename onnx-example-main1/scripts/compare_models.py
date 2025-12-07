@@ -24,14 +24,11 @@ from metamorphic import (
     TAALEIS_FEATURE_CANDIDATES,
 )
 
-# ============================================================================
-# CONFIGURATION - EDIT THESE PATHS TO CHANGE MODELS
-# ============================================================================
-GOOD_MODEL_PATH = "models/model_1.onnx"  # Path to the good (fair) model
-BAD_MODEL_PATH = "models/model_2.onnx"    # Path to the bad (biased) model
-DATA_PATH = "data/synth_data_for_training.csv"  # Path to the dataset
-LABEL_COLUMN = "checked"  # Target column name
-# ============================================================================
+GOOD_MODEL_PATH = "models/model_1.onnx"  
+BAD_MODEL_PATH = "models/model_2.onnx"    
+DATA_PATH = "data/investigation_train_large_checked.csv"  
+LABEL_COLUMN = "checked"  
+
 
 
 def analyze_model_bias(
