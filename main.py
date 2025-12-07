@@ -11,7 +11,7 @@ from src.model_creation import ModelCreator, OnnxModelWrapper
 
 if __name__ == "__main__":
     df = pd.read_csv("investigation_train_large_checked.csv")
-    partition_file = "./inputs/medical_test.txt"
+    partition_file = "./inputs/main_test.txt"
     partitioner = Partitioner(df, partition_file)
 
     # Features and target
@@ -41,6 +41,8 @@ if __name__ == "__main__":
             print("==============================================")
             print(f"================MODEL:{name}=================")
             print("==============================================")
+            print("=== Model accuracy ===")
+            model_creator.print_model_accuracy(model)
             print("=== Partition evaluation ===")
             evaluate_partitioning(model, X_test, y_test, partitioner.get_partitions())
 

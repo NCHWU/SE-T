@@ -21,7 +21,6 @@ OutsideRotterdam, adres_recentste_plaats_rotterdam == 0
 FeijenoordDistrict, adres_recentste_wijk_feijenoord == 1
 OtherDistricts, adres_recentste_wijk_feijenoord == 0
 
-
 #######################################
 # Citizenship / Integration Need
 ######################################

@@ -46,6 +46,12 @@ class ModelCreator:
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.X, self.y, **kwargs
         )
+    
+    def print_model_accuracy(self, pipeline):
+       
+       y_pred = pipeline.predict(self.X_test)
+       acc = accuracy_score(self.y_test, y_pred)
+       print(f"{pipeline} accuracy on test set: {acc:.3f}") 
 
     def train_bad_model(self):
         selector = VarianceThreshold()
@@ -83,9 +89,9 @@ class ModelCreator:
 
         bad_pipeline.fit(X_train, y_train)
 
-        y_pred = bad_pipeline.predict(self.X_test)
+        y_pred = bad_pipeline.predict(self.x_test)
         acc = accuracy_score(self.y_test, y_pred)
-        print(f"[BAD MODEL] Accuracy on test set: {acc:.3f}")
+        print(f"[bad model] accuracy on test set: {acc:.3f}")
         return bad_pipeline
 
     def train_good_model(self):

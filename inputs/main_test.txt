@@ -1,0 +1,49 @@
+#######################################
+# Age Groups
+#######################################
+Youth, persoon_leeftijd_bij_onderzoek < 25
+MiddleAge, persoon_leeftijd_bij_onderzoek >= 25 & persoon_leeftijd_bij_onderzoek <= 55
+Senior, persoon_leeftijd_bij_onderzoek > 55
+
+#######################################
+# Gender
+#######################################
+Male, persoon_geslacht_vrouw == 0
+Female, persoon_geslacht_vrouw == 1
+
+#######################################
+# Age Groups
+#######################################
+Youth, persoon_leeftijd_bij_onderzoek < 25
+MiddleAge, persoon_leeftijd_bij_onderzoek >= 25 & persoon_leeftijd_bij_onderzoek <= 55
+Senior, persoon_leeftijd_bij_onderzoek > 55
+
+#######################################
+# Gender
+#######################################
+Male, persoon_geslacht_vrouw == 0
+Female, persoon_geslacht_vrouw == 1
+
+#######################################
+# Medical Exemption
+#######################################
+HasMedicalExemption, ontheffing_reden_hist_medische_gronden == 1
+NoMedicalExemption, ontheffing_reden_hist_medische_gronden == 0
+
+#######################################
+# Physical Health Problems
+#######################################
+HasPhysicalHealthIssues, belemmering_hist_lichamelijke_problematiek == 1 
+NoPhysicalHealthIssues, belemmering_hist_lichamelijke_problematiek == 0 
+
+#######################################
+# Psychological / Mental Health Problems
+#######################################
+HasPsychologicalIssues, belemmering_hist_psychische_problemen == 1 
+NoPsychologicalIssues, belemmering_hist_psychische_problemen == 0 
+
+#######################################
+# Medical Availability Restrictions
+#######################################
+HasMedicalAvailabilityRestriction, beschikbaarheid_huidig_afwijkend_wegens_medische_omstandigheden == 1
+NoMedicalAvailabilityRestriction, beschikbaarheid_huidig_afwijkend_wegens_medische_omstandigheden == 0 
