@@ -1,30 +1,74 @@
-# CS4015 Software engineering and testing for AI systems
+# Bias Detection via Metamorphic Testing
 
-This folder contains the example for converting your model to onnx, using the onnx runtime.
+This project implements metamorphic testing to detect bias in machine learning models for welfare fraud detection.
 
-#
-### <u>Pipenv</u>
+## Setup
 
-To make life easy for everyone, we've setup a pip file to ensure quick and easy install of dependencies.
+Install dependencies using pip:
 
-<b>NOTE</b>: <i>Before installing any dependencies, open the Pipfile in your editor and un-comment the version of Tensorflow for your system.</i>
+```bash
+pip install -r requirements.txt
+```
 
-Open a terminal/ powershell and navigate to the project folder, then type:
+**Note**: If you encounter NumPy compatibility errors, downgrade NumPy:
 
-    pipenv shell
+```bash
+pip install "numpy<2"
+```
 
-This will put your current session into the python virtual environment. Then type:
+## Scripts
 
-    pipenv install
+### 1. Analyze Dataset Bias
 
-This will install the dependencies defined in the Pipfile, into this specific environment. By doing this, we can ensure no cross dependency issues when working on different python projects.
+Examine language proficiency bias in the dataset:
 
----
+```bash
+python scripts/analyze_language_bias.py --data data/investigation_train_large_checked.csv
+```
 
-You will need to enable this virtual environment in your code editor to ensure it uses the correct dependencies. For VS Code, this can be found in the bottom right corner of the UI.
+### 2. Train Models
 
-It will currently likely show your current Python version. Click this and it will open up the 'Select Interpreter' drop down. For myself, the environment starts with <b><i>'labs'</i></b>, which I then click on to enable as my interpreter.
+Train good and bad models with different fairness properties:
 
-Yours will likely be the same, or if different, will be shown in your terminal/ powershell window when you typed 'pipenv shell' before.
+```bash
+python scripts/goodbadmodel.py --data data/synth_data_for_training.csv
+```
 
-That should have you up and running! Enjoy the labs and if you have any issues with this, please reach out to the staff and we'll do our best to get you going.
+This creates:
+- `models/goodModel.onnx` - Model with bias mitigation via reweighting
+- `models/badModel.onnx` - Model trained with uniform weights (learns bias naturally)
+
+### 3. Run Metamorphic Test
+
+Test a single model for language proficiency bias:
+
+```bash
+python scripts/metamorphic.py --model models/goodModel.onnx --data data/investigation_train_large_checked.csv
+```
+
+### 4. Compare Models
+
+Compare both models side-by-side:
+
+```bash
+python scripts/compare_models.py
+```
+
+To use different models, edit the configuration at the top of `compare_models.py`:
+
+```python
+GOOD_MODEL_PATH = "models/goodModel.onnx"
+BAD_MODEL_PATH = "models/badModel.onnx"
+DATA_PATH = "data/investigation_train_large_checked.csv"
+LABEL_COLUMN = "checked"
+```
+
+## How It Works
+
+**Metamorphic Testing**: The test sets all language proficiency values to "met" and measures how much predictions change. Lower changes indicate less bias.
+
+**Good Model**: Uses sample reweighting to balance positive class across language groups.
+
+**Bad Model**: Uses uniform weights, learning bias from data patterns.
+
+Both models achieve ~94.5% accuracy but differ in fairness properties.
