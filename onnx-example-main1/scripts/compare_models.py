@@ -24,6 +24,15 @@ from metamorphic import (
     TAALEIS_FEATURE_CANDIDATES,
 )
 
+# ============================================================================
+# CONFIGURATION - EDIT THESE PATHS TO CHANGE MODELS
+# ============================================================================
+GOOD_MODEL_PATH = "models/model_1.onnx"  # Path to the good (fair) model
+BAD_MODEL_PATH = "models/model_2.onnx"    # Path to the bad (biased) model
+DATA_PATH = "data/synth_data_for_training.csv"  # Path to the dataset
+LABEL_COLUMN = "checked"  # Target column name
+# ============================================================================
+
 
 def analyze_model_bias(
     model_path: str | Path,
@@ -69,28 +78,31 @@ def analyze_model_bias(
 
 
 def main() -> None:
+    # Get base directory (parent of scripts folder)
+    base_dir = Path(__file__).resolve().parents[1]
+
     parser = argparse.ArgumentParser(
         description="Compare good vs bad model on metamorphic tests."
     )
     parser.add_argument(
         "--good-model",
-        default=str(Path(__file__).resolve().parents[1] / "models" / "goodModel.onnx"),
-        help="Path to the good model ONNX file.",
+        default=str(base_dir / GOOD_MODEL_PATH),
+        help=f"Path to the good model ONNX file. (default: {GOOD_MODEL_PATH})",
     )
     parser.add_argument(
         "--bad-model",
-        default=str(Path(__file__).resolve().parents[1] / "models" / "badModel.onnx"),
-        help="Path to the bad model ONNX file.",
+        default=str(base_dir / BAD_MODEL_PATH),
+        help=f"Path to the bad model ONNX file. (default: {BAD_MODEL_PATH})",
     )
     parser.add_argument(
         "--data",
-        default=str(Path(__file__).resolve().parents[1] / "data" / "synth_data_for_training.csv"),
-        help="Path to the CSV dataset.",
+        default=str(base_dir / DATA_PATH),
+        help=f"Path to the CSV dataset. (default: {DATA_PATH})",
     )
     parser.add_argument(
         "--label-column",
-        default="checked",
-        help="Name of the target column.",
+        default=LABEL_COLUMN,
+        help=f"Name of the target column. (default: {LABEL_COLUMN})",
     )
     args = parser.parse_args()
 
