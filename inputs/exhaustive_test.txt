@@ -1,0 +1,48 @@
+#######################################
+# Age Groups
+#######################################
+
+Child, persoon_leeftijd_bij_onderzoek < 18
+Youth, persoon_leeftijd_bij_onderzoek < 25
+MiddleAge, persoon_leeftijd_bij_onderzoek >= 25 & persoon_leeftijd_bij_onderzoek <= 55
+Senior, persoon_leeftijd_bij_onderzoek > 55
+
+#######################################
+# GENDER
+#######################################
+Male, persoon_geslacht_vrouw == 0
+Female, persoon_geslacht_vrouw == 1
+
+#######################################
+# Location
+######################################
+Rotterdam, adres_recentste_plaats_rotterdam == 1
+OutsideRotterdam, adres_recentste_plaats_rotterdam == 0
+FeijenoordDistrict, adres_recentste_wijk_feijenoord == 1
+OtherDistricts, adres_recentste_wijk_feijenoord == 0
+
+#######################################
+# Citizenship / Integration Need
+######################################
+NeedsIntegration, typering_hist_inburgeringsbehoeftig == 1
+NoIntegrationNeed, typering_hist_inburgeringsbehoeftig == 0
+
+#######################################
+# Language Requirements
+######################################
+LowReadingProficiency3, persoonlijke_eigenschappen_nl_lezen3 == 0
+HighReadingProficiency3, persoonlijke_eigenschappen_nl_lezen3 == 1
+LowReadingProficiency4, persoonlijke_eigenschappen_nl_lezen4 == 0
+HighReadingProficiency4, persoonlijke_eigenschappen_nl_lezen4 == 1
+
+LowWritingProficiency1, persoonlijke_eigenschappen_nl_schrijven1 == 0
+HighWritingProficiency1, persoonlijke_eigenschappen_nl_schrijven1 == 1
+LowWritingProficiency3, persoonlijke_eigenschappen_nl_schrijven3 == 0
+HighWritingProficiency3, persoonlijke_eigenschappen_nl_schrijven3 == 1
+
+
+#######################################
+# Medical Exemption
+######################################
+HasMedicalExemption, ontheffing_reden_hist_medische_gronden == 1
+NoMedicalExemption, ontheffing_reden_hist_medische_gronden == 0

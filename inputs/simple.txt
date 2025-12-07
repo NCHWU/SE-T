@@ -1,0 +1,12 @@
+#######################################
+# Age Groups
+#######################################
+Youth, persoon_leeftijd_bij_onderzoek < 25
+MiddleAge, persoon_leeftijd_bij_onderzoek >= 25 & persoon_leeftijd_bij_onderzoek <= 55
+Senior, persoon_leeftijd_bij_onderzoek > 55
+
+#######################################
+# Gender
+#######################################
+Male, persoon_geslacht_vrouw == 0
+Female, persoon_geslacht_vrouw == 1
