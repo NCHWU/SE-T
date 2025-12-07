@@ -2,17 +2,15 @@
 """
 Train 'good' and 'bad' models for bias detection via metamorphic testing.
 
-Design Decision: Reweighting vs Dropping Features
+design decision: reweighting vs dropping features
 -------------------------------------------------
-This implementation uses SAMPLE REWEIGHTING (not feature dropping) to create
+This implementation uses reweighting to create
 the good model. While the assignment allows dropping protected features
 internally, reweighting is better for metamorphic testing because:
 
-1. Makes testing meaningful: Tests if model learned fairness DESPITE seeing
-   the protected attribute (language proficiency)
-2. More realistic: Real systems mostyly cannot remove features 
-3. Shows fairness can be achieved
-   through training strategy, not just feature selection
+1.Tests if model learned fairness DESPITE seeing
+the protected attribute (language proficiency)
+2.Shows fairness can be achieved through training strategy, not just feature selection
 
 The bad model uses uniform weights (learns bias naturally from data).
 The good model reweights samples to balance positive class across language groups.
@@ -54,14 +52,11 @@ LANG_TAALEIS_COL = "persoonlijke_eigenschappen_taaleis_voldaan"
 def parse_args() -> argparse.Namespace:
     """
     CLI for training a deliberately 'good' and 'bad' model and exporting them to ONNX.
-
-    This mirrors the interfaces used in the other scripts so that you can re‑use
-    the same CSV and label column.
     """
     parser = argparse.ArgumentParser(
         description=(
             "Train a deliberately 'good' and 'bad' model, and export them as "
-            "model_1.onnx and model_2.onnx."
+            "goodModel.onnx and badModel.onnx."
         )
     )
     parser.add_argument(

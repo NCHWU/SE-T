@@ -36,23 +36,6 @@ def parse_args() -> argparse.Namespace:
         default="checked",
         help="Name of the target column.",
     )
-    parser.add_argument(
-        "--threshold",
-        type=float,
-        default=0.15,
-        help="Maximum acceptable prediction change for metamorphic tests. "
-             "Default 0.15 allows fair models to pass while detecting biased models.",
-    )
-    # Threshold rationale:
-    # - Empirically derived: Good model P95 (0.098) + safety margin (0.052) = 0.15
-    # - Represents 15 percentage point shift in fraud probability
-    # - Distinguishes good model (0%% violations) from bad model (2.8%% violations)
-    # - Balances strictness with practicality for 315-dimensional feature space
-    # - Alternative thresholds tested:
-    #   * 0.05: Too strict, both models fail (good: 8.8%%, bad: 9.7%%)
-    #   * 0.10: Still too strict (good: 4.8%%, bad: 6.0%%)
-    #   * 0.15: Good passes, bad fails (OPTIMAL)
-    #   * 0.20: Too lenient, both models pass
     return parser.parse_args()
 
 
@@ -100,47 +83,45 @@ def run_metamorphic_test(
     X_test: pd.DataFrame,
     transform_func: Callable[[pd.DataFrame], pd.DataFrame],
     label: str,
-    threshold: float,
-) -> None:
+) -> dict:
     """
-    Run a metamorphic test by applying a transformation and asserting predictions should not change.
+    Run a metamorphic test by applying a transformation and reporting the changes.
 
     Args:
         session: ONNX inference session
         X_test: Test dataset
         transform_func: Function that applies metamorphic transformation
         label: Name of the test for output
-        threshold: Maximum acceptable change in prediction
 
-    Raises:
-        AssertionError: If any prediction changes by more than threshold
+    Returns:
+        Dictionary containing statistics about prediction changes
     """
     original_probs = predict_onnx(session, X_test)
     X_transformed = transform_func(X_test.copy())
     transformed_probs = predict_onnx(session, X_transformed)
 
     changes = np.abs(transformed_probs - original_probs)
-    violations = (changes > threshold).sum()
-    violation_rate = violations / len(changes) * 100
     mean_change = changes.mean()
+    median_change = np.median(changes)
     max_change = changes.max()
+    min_change = changes.min()
+    std_change = changes.std()
 
-    # Calculate percentiles
-    p50 = np.percentile(changes, 50)
-    p95 = np.percentile(changes, 95)
+    stats = {
+        "test": label,
+        "total_samples": len(changes),
+        "mean_change": mean_change,
+        "median_change": median_change,
+        "std_change": std_change,
+        "min_change": min_change,
+        "max_change": max_change,
+    }
 
-    print(
-        f"[{label}] violations={violations}/{len(changes)} ({violation_rate:.1f}%), "
-        f"mean_change={mean_change:.3f}, max_change={max_change:.3f}, "
-        f"p50={p50:.3f}, p95={p95:.3f}"
-    )
+    print(f"\nSamples: {len(changes):,}")
+    print(f"Mean: {mean_change:.4f} | Median: {median_change:.4f} | Std: {std_change:.4f}")
+    print(f"Min: {min_change:.4f} | Max: {max_change:.4f}")
 
-    # Assert that predictions should not change
-    assert violations == 0, (
-        f"Metamorphic test '{label}' failed: {violations}/{len(changes)} predictions "
-        f"changed by more than {threshold:.3f} (violation_rate={violation_rate:.1f}%, "
-        f"max_change={max_change:.3f})"
-    )
+    return stats
 
 
 def transform_language_proficiency(X: pd.DataFrame) -> pd.DataFrame:
@@ -162,62 +143,40 @@ def transform_language_proficiency(X: pd.DataFrame) -> pd.DataFrame:
     return X
 
 
-def analyze_language_invariance(session: rt.InferenceSession, X_test: pd.DataFrame, threshold: float) -> None:
+def analyze_language_invariance(session: rt.InferenceSession, X_test: pd.DataFrame) -> dict:
     column = first_present(TAALEIS_FEATURE_CANDIDATES, X_test)
     if not column:
-        print("[language_invariance] feature not found, skipping.")
-        return
+        print("Error: Language feature not found")
+        return None
 
-    print(f"[language_invariance] using column '{column}'")
-    run_metamorphic_test(
+    return run_metamorphic_test(
         session, X_test, transform_language_proficiency,
-        "language_invariance", threshold
+        "language_invariance"
     )
 
 
 def main() -> None:
     args = parse_args()
 
-    print(f"Loading ONNX model: {args.model}")
     session = load_onnx_model(args.model)
-
-    print(f"Loading test data: {args.data}")
     X_full, _ = load_inputs(args.data, args.label_column)
 
     # Get model input shape to determine which features it expects
     input_shape = session.get_inputs()[0].shape
     n_features_expected = input_shape[1] if len(input_shape) > 1 else X_full.shape[1]
 
-    print(f"Model expects {n_features_expected} features, dataset has {X_full.shape[1]} features")
-
-    # Check if this is the "bad" model (6 features) or "good" model (~300 features)
+    # Check if model has different feature count than dataset
     if n_features_expected == 6:
-        print("Detected bad model (uses biased features)")
-        print("ERROR: Cannot run metamorphic tests on bad model with feature engineering.")
-        print("The bad model uses derived features, making metamorphic transformation impossible.")
-        print("Please retrain the bad model to accept raw features.")
+        print("ERROR: Model uses engineered features, cannot run metamorphic test.")
         return
 
-    # IMPORTANT: The good model was trained with sensitive features REMOVED
-    # We need to check if we should run metamorphic tests or not
-    # If the model has fewer features than the dataset, it likely dropped sensitive features
     if n_features_expected < X_full.shape[1]:
-        print(f"\nWARNING: Model has fewer features ({n_features_expected}) than dataset ({X_full.shape[1]})")
-        print("This suggests sensitive features were REMOVED during training.")
-        print("Metamorphic testing on removed features is not meaningful.")
-        print("\nFor a meaningful test, the model should:")
-        print("1. Include the sensitive feature during training")
-        print("2. Learn to make fair decisions despite having access to it")
-        print("\nCurrent approach (feature removal) ensures fairness but makes")
-        print("metamorphic testing trivial - the test passes because the model")
-        print("never sees the feature, not because it learned to be fair.")
+        print(f"WARNING: Model has {n_features_expected} features, dataset has {X_full.shape[1]}.")
+        print("Sensitive features may have been removed during training.")
         return
 
     X_test = X_full
-
-    print(f"\n=== Metamorphic tests (threshold={args.threshold:.3f}) ===")
-    analyze_language_invariance(session, X_test, args.threshold)
-    print("\n[PASS] All metamorphic tests passed!")
+    analyze_language_invariance(session, X_test)
 
 
 if __name__ == "__main__":

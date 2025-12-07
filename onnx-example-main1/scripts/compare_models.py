@@ -2,8 +2,8 @@
 """
 Run metamorphic tests on both models and generate a comparison report.
 
-This script helps determine the appropriate threshold for distinguishing
-between good (fair) and bad (biased) models.
+This script compares how two models respond to metamorphic transformations
+of the language proficiency feature.
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ from metamorphic import (
     TAALEIS_FEATURE_CANDIDATES,
 )
 
-GOOD_MODEL_PATH = "models/model_1.onnx"  
-BAD_MODEL_PATH = "models/model_2.onnx"    
+GOOD_MODEL_PATH = "models/goodModel.onnx"  
+BAD_MODEL_PATH = "models/badModel.onnx"    
 DATA_PATH = "data/investigation_train_large_checked.csv"  
 LABEL_COLUMN = "checked"  
 
@@ -37,7 +37,7 @@ def analyze_model_bias(
     label_column: str,
     model_name: str,
 ) -> dict:
-    """Analyze bias in a model without asserting."""
+    """Analyze how a model responds to metamorphic transformations."""
     session = load_onnx_model(model_path)
     X_full, _ = load_inputs(data_path, label_column)
 
@@ -58,18 +58,10 @@ def analyze_model_bias(
         "total_samples": len(changes),
         "mean_change": changes.mean(),
         "median_change": np.median(changes),
+        "std_change": changes.std(),
+        "min_change": changes.min(),
         "max_change": changes.max(),
-        "p90": np.percentile(changes, 90),
-        "p95": np.percentile(changes, 95),
-        "p99": np.percentile(changes, 99),
     }
-
-    # Calculate violations at different thresholds
-    for threshold in [0.05, 0.10, 0.15, 0.20]:
-        violations = (changes > threshold).sum()
-        violation_rate = violations / len(changes) * 100
-        stats[f"violations_{int(threshold*100):02d}"] = violations
-        stats[f"rate_{int(threshold*100):02d}"] = violation_rate
 
     return stats
 
@@ -103,70 +95,17 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    print("=" * 80)
-    print("Metamorphic Testing Bias Comparison Report")
-    print("=" * 80)
-
     # Analyze both models
     good_stats = analyze_model_bias(args.good_model, args.data, args.label_column, "Good Model")
     bad_stats = analyze_model_bias(args.bad_model, args.data, args.label_column, "Bad Model")
 
-    # Print summary statistics
-    print(f"\nDataset: {good_stats['total_samples']:,} samples\n")
-
-    print(f"{'Metric':<20} {'Good Model':>15} {'Bad Model':>15} {'Difference':>15}")
-    print("-" * 80)
-
-    metrics = [
-        ("mean_change", "Mean Change", "{:.4f}"),
-        ("median_change", "Median Change", "{:.4f}"),
-        ("p90", "P90 Change", "{:.4f}"),
-        ("p95", "P95 Change", "{:.4f}"),
-        ("p99", "P99 Change", "{:.4f}"),
-        ("max_change", "Max Change", "{:.4f}"),
-    ]
-
-    for key, label, fmt in metrics:
-        good_val = good_stats[key]
-        bad_val = bad_stats[key]
-        diff = bad_val - good_val
-        print(f"{label:<20} {fmt.format(good_val):>15} {fmt.format(bad_val):>15} {fmt.format(diff):>15}")
-
-    # Print violation rates at different thresholds
-    print("\n" + "=" * 80)
-    print("Violation rates at different thresholds")
-    print("=" * 80)
-    print(f"\n{'Threshold':<12} {'Good Model':>20} {'Bad Model':>20} {'Improvement':>15}")
-    print("-" * 80)
-
-    for threshold in [0.05, 0.10, 0.15, 0.20]:
-        thresh_key = f"rate_{int(threshold*100):02d}"
-        good_rate = good_stats[thresh_key]
-        bad_rate = bad_stats[thresh_key]
-        improvement = bad_rate - good_rate
-
-        # Determine if this threshold can distinguish models
-        if good_rate == 0 and bad_rate > 0:
-            status = " (GOOD PASSES, BAD FAILS)"
-        elif good_rate == 0 and bad_rate == 0:
-            status = " (Both pass)"
-        else:
-            status = " (Both fail)"
-
-        print(f"{threshold:<12.2f} {good_rate:>19.1f}% {bad_rate:>19.1f}% {improvement:>14.1f}%{status}")
-
-    # Recommendation
-    print("\n" + "=" * 80)
-    print("Recommendations")
-    print("=" * 80)
-
-    print(f"\nBoth models have outliers above any reasonable threshold.")
-    print(f"This is expected when the protected feature has legitimate predictive signal.")
-    print(f"\nKey findings:")
-    print(f"  1. Good model reduces mean change by {((bad_stats['mean_change'] - good_stats['mean_change']) / bad_stats['mean_change'] * 100):.1f}%")
-    print(f"  2. Good model reduces P95 change by {((bad_stats['p95'] - good_stats['p95']) / bad_stats['p95'] * 100):.1f}%")
-    print(f"  3. Good model reduces violations at 0.05 by {bad_stats['rate_05'] - good_stats['rate_05']:.1f}%")
-    print("\n" + "=" * 80)
+    # Print results
+    print(f"\n{'Metric':<15} {'Good Model':>12} {'Bad Model':>12} {'Diff':>12}")
+    print("-" * 52)
+    print(f"{'Mean':<15} {good_stats['mean_change']:>12.4f} {bad_stats['mean_change']:>12.4f} {bad_stats['mean_change']-good_stats['mean_change']:>12.4f}")
+    print(f"{'Median':<15} {good_stats['median_change']:>12.4f} {bad_stats['median_change']:>12.4f} {bad_stats['median_change']-good_stats['median_change']:>12.4f}")
+    print(f"{'Std':<15} {good_stats['std_change']:>12.4f} {bad_stats['std_change']:>12.4f} {bad_stats['std_change']-good_stats['std_change']:>12.4f}")
+    print(f"{'Max':<15} {good_stats['max_change']:>12.4f} {bad_stats['max_change']:>12.4f} {bad_stats['max_change']-good_stats['max_change']:>12.4f}")
 
 
 if __name__ == "__main__":
