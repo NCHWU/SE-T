@@ -1,0 +1,19 @@
+# Group1: Bias Detection via Metamorphic Testing
+# Python 3.10+ required
+#
+# Install: pip install -r requirements.txt
+
+# Core ML
+scikit-learn==1.7.2
+numpy==2.3.5
+pandas==2.3.3
+
+# ONNX model export and inference
+onnx==1.19.1
+onnxruntime==1.23.2
+skl2onnx==1.19.1
+
+# Required by sklearn/onnx
+scipy==1.16.3
+joblib==1.5.2
+protobuf==6.33.1

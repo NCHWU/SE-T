@@ -1,42 +1,96 @@
 #!/usr/bin/env python3
 """
-Main experiment runner: Train models and run all tests.
+Main experiment orchestration script for bias detection via metamorphic testing.
 
-This orchestrates the complete bias detection pipeline:
-1. Train good and bad models
-2. Run metamorphic tests
-3. Run partition tests
-4. Generate comparison report
+This script runs the complete bias detection pipeline:
+1. Load training data
+2. Train three model variants (baseline, good, bad)
+3. Export models to ONNX format
+4. Run all metamorphic and partition tests
+5. Generate formatted comparison report
+
+Output is written to both console and a timestamped file in the results/ directory.
+
+Example
+-------
+Run from the src directory::
+
+    python run_experiments.py
+
+Results will be saved to::
+
+    Group1/results/experiment_results_YYYYMMDD_HHMMSS.txt
 """
 
 import sys
 from datetime import datetime
 from pathlib import Path
 
-from train_models import train_baseline_model, train_good_model, train_bad_model, load_data, export_to_onnx
+from data_utils import load_data
+from train_models import (
+    train_baseline_model,
+    train_good_model,
+    train_bad_model,
+    export_to_onnx,
+)
 from test_models import run_all_tests
 
 
 class TeeOutput:
-    """Write to both stdout and file simultaneously."""
+    """
+    Duplicate stdout to both terminal and a log file.
+
+    This class wraps sys.stdout to write all output to both the console
+    and a specified log file, enabling reproducible experiment logging.
+
+    Parameters
+    ----------
+    file_path : str or Path
+        Path to the log file.
+
+    Example
+    -------
+    >>> tee = TeeOutput("output.log")
+    >>> sys.stdout = tee
+    >>> print("This goes to both console and file")
+    >>> sys.stdout = tee.terminal  # Restore original stdout
+    >>> tee.close()
+    """
+
     def __init__(self, file_path):
         self.terminal = sys.stdout
         self.log = open(file_path, 'w', encoding='utf-8')
-    
+
     def write(self, message):
         self.terminal.write(message)
         self.log.write(message)
-    
+
     def flush(self):
         self.terminal.flush()
         self.log.flush()
-    
+
     def close(self):
         self.log.close()
 
 
-def print_metamorphic_results(baseline_results, good_results, bad_results):
-    """Print metamorphic test comparison for all 3 models."""
+def print_metamorphic_results(baseline_results: dict, good_results: dict, bad_results: dict) -> None:
+    """
+    Print formatted comparison of metamorphic test results across all three models.
+
+    Parameters
+    ----------
+    baseline_results : dict
+        Test results from the baseline model.
+    good_results : dict
+        Test results from the fairness-aware model.
+    bad_results : dict
+        Test results from the intentionally biased model.
+
+    Notes
+    -----
+    Displays tables showing mean, median, std, and max prediction changes
+    for each metamorphic test. Lower values indicate less bias.
+    """
     print("\n" + "="*90)
     print("METAMORPHIC TEST RESULTS")
     print("="*90)
@@ -116,8 +170,28 @@ def print_metamorphic_results(baseline_results, good_results, bad_results):
         print("Financial features not available in this dataset")
 
 
-def print_partition_results(baseline_results, good_results, bad_results, partition_name):
-    """Print partition test comparison for all 3 models."""
+def print_partition_results(
+    baseline_results: dict, good_results: dict, bad_results: dict, partition_name: str
+) -> None:
+    """
+    Print formatted comparison of partition test results across all three models.
+
+    Parameters
+    ----------
+    baseline_results : dict
+        Test results from the baseline model.
+    good_results : dict
+        Test results from the fairness-aware model.
+    bad_results : dict
+        Test results from the intentionally biased model.
+    partition_name : str
+        Name of the partition test (e.g., "language", "gender").
+
+    Notes
+    -----
+    Displays mean prediction scores for each demographic group within the partition.
+    Large differences between groups indicate potential bias.
+    """
     baseline_parts = baseline_results.get("partitions", {})
     good_parts = good_results.get("partitions", {})
     bad_parts = bad_results.get("partitions", {})
@@ -154,9 +228,22 @@ def print_partition_results(baseline_results, good_results, bad_results, partiti
         print(f"{group:<20} {baseline_mean:>20.6f} {good_mean:>20.6f} {bad_mean:>20.6f}")
 
 
-def main():
-    """Run complete experiment pipeline."""
-    
+def main() -> None:
+    """
+    Run the complete bias detection experiment pipeline.
+
+    This function orchestrates the entire experiment:
+    1. Loads training data from data/synth_data_for_training.csv
+    2. Trains baseline, good (fair), and bad (biased) models
+    3. Exports all models to ONNX format in models/
+    4. Loads test data from data/investigation_train_large_checked.csv
+    5. Runs all metamorphic and partition tests on each model
+    6. Prints formatted comparison tables
+    7. Saves all output to a timestamped file in results/
+
+    The output file is named experiment_results_YYYYMMDD_HHMMSS.txt and contains
+    the complete experiment log for reproducibility.
+    """
     base_dir = Path(__file__).resolve().parents[0]
     data_dir = base_dir.parent / "data"
     model_dir = base_dir.parent / "models"

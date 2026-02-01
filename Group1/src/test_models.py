@@ -1,11 +1,28 @@
 #!/usr/bin/env python3
 """
-Partition-based and metamorphic testing for bias detection.
+Bias detection tests using metamorphic and partition-based testing.
 
-Tests:
-1. Language Proficiency Invariance - Check if model depends on language proficiency
-2. Address Instability - Check if model depends on housing stability  
-3. Neighborhood - Check if model shows geographic/socioeconomic bias
+This module implements two categories of bias detection tests:
+
+1. **Metamorphic Tests**: Verify prediction invariance when protected attributes
+   are modified. A fair model should produce similar predictions regardless of
+   protected attribute values.
+
+2. **Partition Tests**: Compare prediction distributions across demographic groups.
+   Large disparities between groups indicate potential bias.
+
+Example
+-------
+Run all tests on a model::
+
+    from test_models import run_all_tests
+    results = run_all_tests("models/goodModel.onnx", "data/test.csv")
+
+Run individual tests::
+
+    from test_models import metamorphic_gender_invariance, load_data
+    X, _ = load_data("data/test.csv")
+    result = metamorphic_gender_invariance("models/goodModel.onnx", X)
 """
 
 from pathlib import Path
@@ -15,45 +32,49 @@ import numpy as np
 import pandas as pd
 import onnxruntime as rt
 
-
-NEIGHBORHOOD_PREFIX = "adres_recentste_wijk_"
-GENDER_COL = "persoon_geslacht_vrouw"
-LANG_TAALEIS_CANDIDATES = [
-    "persoonlijke_eigenschappen_taaleis_voldaan",
-    "personeleijke_eigenschappen_taaleis_voldaan",
-    "taaleis_voldaan",
-]
-ADDRESS_FEATURE_CANDIDATES = [
-    "adres_aantal_verschillende_wijken",
-    "adres_aantal_brp_adres",
-    "adres_aantal_woonadres_handmatig",
-    "adres_aantal_verzendadres",
-]
-FINANCIAL_PROBLEM_COLS = [
-    "belemmering_financiele_problemen",
-    "belemmering_dagen_financiele_problemen",
-]
-
-
-def load_data(data_path: str | Path, label_column: str = "checked") -> Tuple[pd.DataFrame, pd.Series]:
-    """Load dataset."""
-    df = pd.read_csv(data_path)
-    y = df[label_column] if label_column in df.columns else None
-    
-    columns_to_drop = [label_column, "Ja", "Nee"]
-    columns_to_drop = [c for c in columns_to_drop if c in df.columns]
-    X = df.drop(columns=columns_to_drop).astype(np.float32)
-    
-    return X, y
+from constants import (
+    NEIGHBORHOOD_PREFIX,
+    GENDER_COL,
+    LANG_TAALEIS_CANDIDATES,
+    ADDRESS_FEATURE_CANDIDATES,
+    FINANCIAL_PROBLEM_COLS,
+)
+from data_utils import load_data
 
 
 def load_onnx_model(model_path: str | Path) -> rt.InferenceSession:
-    """Load ONNX model for inference."""
+    """
+    Load an ONNX model for inference.
+
+    Parameters
+    ----------
+    model_path : str or Path
+        Path to the ONNX model file.
+
+    Returns
+    -------
+    rt.InferenceSession
+        ONNX runtime session ready for inference.
+    """
     return rt.InferenceSession(str(model_path))
 
 
 def first_present(candidates: list[str], frame: pd.DataFrame) -> str | None:
-    """Find first column from candidates that exists in frame."""
+    """
+    Find the first column name from candidates that exists in the dataframe.
+
+    Parameters
+    ----------
+    candidates : list of str
+        Column names to search for, in order of preference.
+    frame : pd.DataFrame
+        DataFrame to search in.
+
+    Returns
+    -------
+    str or None
+        First matching column name, or None if no match found.
+    """
     for col in candidates:
         if col in frame.columns:
             return col
@@ -61,22 +82,40 @@ def first_present(candidates: list[str], frame: pd.DataFrame) -> str | None:
 
 
 def predict_onnx(session: rt.InferenceSession, X: pd.DataFrame) -> np.ndarray:
-    """Get probability predictions from ONNX model (probability of positive class)."""
+    """
+    Get probability predictions from an ONNX model.
+
+    Parameters
+    ----------
+    session : rt.InferenceSession
+        Loaded ONNX runtime session.
+    X : pd.DataFrame
+        Feature matrix.
+
+    Returns
+    -------
+    np.ndarray
+        Probability of positive class for each sample, shape (n_samples,).
+
+    Notes
+    -----
+    Handles multiple ONNX output formats:
+    - Dict format: [{0: prob0, 1: prob1}, ...]
+    - Array format: [[prob0, prob1], ...]
+    """
     input_name = session.get_inputs()[0].name
     X_array = X.values.astype(np.float32)
-    
+
     result = session.run(None, {input_name: X_array})
-    
-    # Handle different output formats (some models return dict, some return array)
+
+    # Handle different output formats
     if isinstance(result[1], list) and isinstance(result[1][0], dict):
-        # Dict format: [{0: prob0, 1: prob1}, ...]
         probs_positive = np.array([prob_dict.get(1, 0) for prob_dict in result[1]])
     elif isinstance(result[1], np.ndarray) and result[1].ndim == 2:
-        # Array format: [[prob0, prob1], ...]
         probs_positive = result[1][:, 1]
     else:
         probs_positive = np.array(result[1])
-    
+
     return probs_positive
 
 
@@ -470,15 +509,35 @@ def partition_gender(
     return results
 
 
-# ============================================================================
-# SUMMARY FUNCTIONS
-# ============================================================================
+# =============================================================================
+# AGGREGATION FUNCTIONS
+# =============================================================================
 
 def run_all_tests(model_path: str | Path, data_path: str | Path) -> dict:
-    """Run all metamorphic and partition tests."""
-    X, _ = load_data(data_path)
-    df_original = pd.read_csv(data_path)
-    
+    """
+    Run all metamorphic and partition tests on a model.
+
+    Parameters
+    ----------
+    model_path : str or Path
+        Path to the ONNX model file.
+    data_path : str or Path
+        Path to the test data CSV file.
+
+    Returns
+    -------
+    dict
+        Nested dictionary with test results:
+        - "metamorphic": Results from all 5 metamorphic tests
+        - "partitions": Results from all 4 partition tests
+
+    Notes
+    -----
+    Each metamorphic test returns statistics on prediction changes (mean, median, std, max).
+    Each partition test returns prediction distributions per demographic group.
+    """
+    X, _, df_original = load_data(data_path, return_raw=True)
+
     results = {
         "metamorphic": {
             "language": metamorphic_language_invariance(model_path, X),
@@ -494,7 +553,7 @@ def run_all_tests(model_path: str | Path, data_path: str | Path) -> dict:
             "neighborhood": partition_neighborhood(model_path, X, df_original),
         }
     }
-    
+
     return results
 
 

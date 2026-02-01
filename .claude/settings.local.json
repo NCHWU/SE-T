@@ -5,7 +5,8 @@
       "Bash(python -m venv:*)",
       "Bash(.venvScriptsactivate)",
       "Bash(python -m pip:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(git -C \"e:\\\\ocean\\\\Documents\\\\Uni\\\\TUDELFT2025\\\\SE_T_AI\\\\SE-T_A1\" log --oneline -10)"
     ],
     "deny": [],
     "ask": []
