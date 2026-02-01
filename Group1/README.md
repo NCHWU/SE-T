@@ -1,74 +1,36 @@
-# Bias Detection via Metamorphic Testing
+# Group 1: Bias Detection via Metamorphic Testing
 
-This project implements metamorphic testing to detect bias in machine learning models for welfare fraud detection.
+## Overview
 
-## Setup
+This project detects bias in machine learning models using metamorphic testing on Rotterdam welfare fraud detection data.
 
-Install dependencies using pip:
+## Files
 
-```bash
-pip install -r requirements.txt
-```
+### `src/train_models.py`
+Trains three models with different fairness strategies:
+- **Baseline Model**: Standard training (no interventions)
+- **Good Model**: Metamorphic data augmentation (8x training data with gender flipping, age partitioning, language balancing, neighborhood neutralization, address/financial stability)
+- **Bad Model**: Extreme bias amplification (8x neighborhood weight, 6x language bias, 4x financial bias, 3x gender bias)
 
-**Note**: If you encounter NumPy compatibility errors, downgrade NumPy:
+### `src/test_models.py`
+Implements bias detection tests:
+- **Metamorphic Tests**: Measure prediction changes when protected attributes are transformed (language, address, neighborhood, gender, financial stability)
+- **Partition Tests**: Compare prediction scores across demographic groups (language proficiency, address stability, neighborhoods, gender)
 
-```bash
-pip install "numpy<2"
-```
+### `src/run_experiments.py`
+Main orchestration script that:
+1. Trains all three models
+2. Runs all metamorphic and partition tests
+3. Generates comparison report showing bias metrics
 
-## Scripts
-
-### 1. Analyze Dataset Bias
-
-Examine language proficiency bias in the dataset:
-
-```bash
-python scripts/analyze_language_bias.py --data data/investigation_train_large_checked.csv
-```
-
-### 2. Train Models
-
-Train good and bad models with different fairness properties:
+## How to Run
 
 ```bash
-python scripts/goodbadmodel.py --data data/synth_data_for_training.csv
+cd Group1/src
+python run_experiments.py
 ```
 
-This creates:
-- `models/goodModel.onnx` - Model with bias mitigation via reweighting
-- `models/badModel.onnx` - Model trained with uniform weights (learns bias naturally)
+Results are automatically saved to `Group1/results/experiment_results_YYYYMMDD_HHMMSS.txt` with timestamp.
 
-### 3. Run Metamorphic Test
 
-Test a single model for language proficiency bias:
 
-```bash
-python scripts/metamorphic.py --model models/goodModel.onnx --data data/investigation_train_large_checked.csv
-```
-
-### 4. Compare Models
-
-Compare both models side-by-side:
-
-```bash
-python scripts/compare_models.py
-```
-
-To use different models, edit the configuration at the top of `compare_models.py`:
-
-```python
-GOOD_MODEL_PATH = "models/goodModel.onnx"
-BAD_MODEL_PATH = "models/badModel.onnx"
-DATA_PATH = "data/investigation_train_large_checked.csv"
-LABEL_COLUMN = "checked"
-```
-
-## How It Works
-
-**Metamorphic Testing**: The test sets all language proficiency values to "met" and measures how much predictions change. Lower changes indicate less bias.
-
-**Good Model**: Uses sample reweighting to balance positive class across language groups.
-
-**Bad Model**: Uses uniform weights, learning bias from data patterns.
-
-Both models achieve ~94.5% accuracy but differ in fairness properties.

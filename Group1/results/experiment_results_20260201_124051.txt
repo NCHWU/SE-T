@@ -1,0 +1,129 @@
+==========================================================================================
+BIAS DETECTION VIA METAMORPHIC TESTING
+==========================================================================================
+
+Timestamp: 2026-02-01 12:40:51
+Results saved to: /Users/nicholaswu/Downloads/SE-T/Group1/results/experiment_results_20260201_124051.txt
+==========================================================================================
+
+[1/3] TRAINING MODELS
+------------------------------------------------------------------------------------------
+Loaded 12,645 training samples, 315 features
+
+Training baseline model...
+[Baseline Model] Accuracy: 0.9453
+Training good model...
+  Augmented training data: 9483 → 75864 samples
+[Good Model] Accuracy: 0.9462
+Training bad model...
+[Bad Model] Accuracy: 0.9273
+
+Exporting to ONNX...
+Exported to /Users/nicholaswu/Downloads/SE-T/Group1/models/baselineModel.onnx
+Exported to /Users/nicholaswu/Downloads/SE-T/Group1/models/goodModel.onnx
+Exported to /Users/nicholaswu/Downloads/SE-T/Group1/models/badModel.onnx
+
+[2/3] RUNNING TESTS
+------------------------------------------------------------------------------------------
+
+Testing baseline model...
+Testing good model...
+Testing bad model...
+
+[3/3] RESULTS
+==========================================================================================
+
+MODEL ACCURACY
+------------------------------------------------------------------------------------------
+Baseline Model                     0.9453
+Good Model                         0.9462
+Bad Model                          0.9273
+
+==========================================================================================
+METAMORPHIC TEST RESULTS
+==========================================================================================
+
+Lower values = More fair (less bias)
+
+LANGUAGE PROFICIENCY INVARIANCE                                                           
+
+Metric                      Baseline           Good Model            Bad Model
+------------------------------------------------------------------------------------------
+Mean                        0.028588             0.000000             0.000000
+Median                      0.003117             0.000000             0.000000
+Std                         0.048295             0.000000             0.000000
+Max                         0.171255             0.000000             0.000000
+
+ADDRESS INSTABILITY INVARIANCE                                                            
+
+Metric                      Baseline           Good Model            Bad Model
+------------------------------------------------------------------------------------------
+Mean                        0.010362             0.009491             0.021398
+Median                      0.000000             0.000000             0.000000
+Std                         0.029163             0.026883             0.061838
+Max                         0.143020             0.132810             0.327477
+
+NEIGHBORHOOD INVARIANCE                                                                   
+
+Metric                      Baseline           Good Model            Bad Model
+------------------------------------------------------------------------------------------
+Mean                        0.000000             0.000000             0.000000
+Median                      0.000000             0.000000             0.000000
+Std                         0.000000             0.000000             0.000000
+Max                         0.000000             0.000000             0.000000
+
+GENDER INVARIANCE                                                                         
+
+Metric                      Baseline           Good Model            Bad Model
+------------------------------------------------------------------------------------------
+Mean                        0.000000             0.000000             0.000000
+Median                      0.000000             0.000000             0.000000
+Std                         0.000000             0.000000             0.000000
+Max                         0.000000             0.000000             0.000000
+
+FINANCIAL STABILITY INVARIANCE                                                            
+
+Metric                      Baseline           Good Model            Bad Model
+------------------------------------------------------------------------------------------
+Mean                        0.009754             0.002579             0.012081
+Median                      0.000000             0.000000             0.000000
+Std                         0.032479             0.021739             0.038034
+Max                         0.348649             0.278141             0.584247
+
+==========================================================================================
+PARTITION TEST RESULTS
+==========================================================================================
+
+Compare prediction scores across demographic groups
+
+LANGUAGE
+------------------------------------------------------------------------------------------
+Group                            Baseline                 Good                  Bad
+Met                              0.066404             0.069471             0.079426
+Not Met                          0.139463             0.125851             0.137989
+Special                          0.149715             0.170564             0.173246
+
+ADDRESS
+------------------------------------------------------------------------------------------
+Group                            Baseline                 Good                  Bad
+Stable                           0.096346             0.093404             0.103744
+Unstable                         0.140375             0.139463             0.151770
+
+GENDER
+------------------------------------------------------------------------------------------
+Group                            Baseline                 Good                  Bad
+Female                           0.091123             0.088558             0.099096
+Male                             0.107697             0.104697             0.115138
+
+NEIGHBORHOOD
+------------------------------------------------------------------------------------------
+Group                            Baseline                 Good                  Bad
+charlois                         0.092762             0.091666             0.102086
+delfshaven                       0.102314             0.098321             0.112915
+feijenoord                       0.113628             0.111278             0.121794
+ijsselmonde                      0.114484             0.111495             0.126559
+kralingen_c                      0.073476             0.070426             0.079659
+noord                            0.100848             0.097679             0.112011
+other                            0.093063             0.091320             0.091950
+prins_alexa                      0.101010             0.096102             0.113013
+stadscentru                      0.080023             0.076714             0.083563
